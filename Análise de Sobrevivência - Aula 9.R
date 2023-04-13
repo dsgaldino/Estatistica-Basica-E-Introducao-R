@@ -1,6 +1,5 @@
 ## Aula 09 - Aula la Análise de sobrevivência
 ## Funções básicas de sobrevivência; Teste de log-rank; Modelo de Cox.
-## DIEGO SOARES GALDINO
 
 ## ---------------------- INSTALANDO BIBILOTECAS ----------------------
 
