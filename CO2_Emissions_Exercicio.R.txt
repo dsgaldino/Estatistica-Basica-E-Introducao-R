@@ -1,0 +1,246 @@
+install.packages("dplyr")
+install.packages("ggplot2")
+install.packages("gridExtra")
+install.packages("dunn.test")
+
+library(dplyr)
+library(ggplot2)
+library(gridExtra)
+require(dunn.test)
+
+dados <- read.csv("CO2 Emissions_Canada.csv", header = TRUE)
+
+head(dados)
+
+names(dados)
+str(dados)
+dados$Vehicle.Class <- as.factor(dados$Vehicle.Class)
+
+#---------------------------------------------------- Pergunta 1 ----------------------------------------------------------------------------
+# Quantas marcas? Quantos modelos? ...
+
+dados %>% summarise_all(n_distinct) # Numero de valores distintos por coluna
+sum(is.na(dados)) # Verificando se possui falta de dados
+
+numero_fabricantes <- n_distinct(dados$Make) # Numero de Marcas
+numero_modelos <- n_distinct(dados$Model) # Numero de modelos
+numero_combustiveis <- n_distinct(dados$Fuel.Type) # Combustíveis utilizados
+numero_cilindros <- n_distinct(dados$Cylinders) # Quantidade de tipos de cilindro por motor
+numero_categorias <- n_distinct(dados$Vehicle.Class) # Tipos de categorias dos carros
+
+#Tabelas e Gráfico
+
+ocorrencias_make = table(dados$Make)
+barplot(ocorrencias_make,main="Quantidade de Modelo por Montadora",xlab = "Carro",ylab="Quantidade")
+
+modelos_por_marca <- dados %>% 
+  dplyr::group_by(Make) %>%
+  dplyr::summarize(distinct_models = n_distinct(Model)) %>% 
+  dplyr::arrange(distinct_models)
+
+mean(modelos_por_marca$distinct_models)
+
+ocorrencias_transmission = table(dados$Transmission)
+barplot(ocorrencias_transmission,main="Quantidade de Ocorrências por Transmissão",xlab = "Transmissão",ylab="Quantidade")
+
+ocorrencias_fuel = table(dados$Fuel.Type)
+barplot(ocorrencias_fuel,main="Combustível Utilizados pelos Modelos",xlab = "Combustível",ylab="Quantidade de Modelo de Carros")
+
+veiculos_por_co2 <- aggregate(CO2.Emissions.g.km. ~ Vehicle.Class, data = dados, FUN = mean)
+max_co2 <- veiculos_por_co2[which.max(veiculos_por_co2$CO2.Emissions.g.km), ]
+barplot(veiculos_por_co2$CO2.Emissions.g.km, names.arg = veiculos_por_co2$Vehicle.Class, xlab = "Veículo", ylab = "Média de emissão de CO2 (g/km)", main = "Média de Emissão de CO2 por Categoria de Veículo")
+
+mean_combustivel_por_co2 <- aggregate(CO2.Emissions.g.km. ~ Fuel.Type, data = dados, FUN = mean)
+barplot(mean_combustivel_por_co2$CO2.Emissions.g.km, names.arg = mean_combustivel_por_co2$Fuel.Type, xlab = "Combustivel", ylab = "Média de emissão de CO2 (g/km)", main = "Média de Emissão de CO2 por Combustível")
+
+boxplot(CO2.Emissions.g.km.~Fuel.Type, data=dados)
+
+veiculos_por_cilindros <- aggregate(CO2.Emissions.g.km. ~ Cylinders, data = dados, FUN = mean)
+max_co2 <- veiculos_por_cilindros[which.max(veiculos_por_cilindros$CO2.Emissions.g.km), ]
+barplot(veiculos_por_cilindros$CO2.Emissions.g.km, names.arg = veiculos_por_cilindros$Cylinders, xlab = "Cilindros", ylab = "Média de emissão de CO2 (g/km)", main = "Média de Emissão de CO2 por Quantidade de Cilindros")
+
+Contagem_classe_veiculo_por_combustivel <- dados %>% 
+  dplyr::group_by(Fuel.Type,Vehicle.Class) %>% 
+  summarize(teste = n())
+
+plot1 <- dados %>% 
+  dplyr::filter(Fuel.Type == "D") %>% 
+  ggplot2::ggplot(aes(y=Vehicle.Class,x=CO2.Emissions.g.km.)) + 
+  ggplot2::ggtitle("Combustivel D") +
+  ggplot2::geom_boxplot() + ggplot2::xlim(0,500)
+
+plot2 <- dados %>% 
+  dplyr::filter(Fuel.Type == "E") %>% 
+  ggplot2::ggplot(aes(y=Vehicle.Class,x=CO2.Emissions.g.km.)) + 
+  ggplot2::ggtitle("Combustivel E") +
+  ggplot2::geom_boxplot() + ggplot2::xlim(0,500)
+
+plot3 <- dados %>% 
+  dplyr::filter(Fuel.Type == "X") %>% 
+  ggplot2::ggplot(aes(y=Vehicle.Class,x=CO2.Emissions.g.km.)) + 
+  ggplot2::ggtitle("Combustivel X") +
+  ggplot2::geom_boxplot() + ggplot2::xlim(0,500)
+
+plot4 <- dados %>% 
+  dplyr::filter(Fuel.Type == "Z") %>% 
+  ggplot2::ggplot(aes(y=Vehicle.Class,x=CO2.Emissions.g.km.)) + 
+  ggplot2::ggtitle("Combustivel Z") +
+  ggplot2::geom_boxplot() + ggplot2::xlim(0,500)
+
+grid.arrange(plot1, plot2, plot3, plot4, ncol=2, nrow=2)
+
+dados %>% 
+  dplyr::filter(Vehicle.Class == "COMPACT") %>% 
+  ggplot2::ggplot(aes(x=Fuel.Type,y=CO2.Emissions.g.km.)) + 
+  ggplot2::ggtitle("SUV - STANDARD") +
+  ggplot2::geom_boxplot()
+
+dados %>% 
+  dplyr::filter(Vehicle.Class == "SUV - STANDARD") %>% 
+  ggplot2::ggplot(aes(x=Fuel.Type,y=CO2.Emissions.g.km.)) + 
+  ggplot2::ggtitle("SUV - STANDARD") +
+  ggplot2::geom_boxplot()
+
+dados %>% 
+  dplyr::filter(Vehicle.Class == "PICKUP TRUCK - STANDARD") %>% 
+  ggplot2::ggplot(aes(x=Fuel.Type,y=CO2.Emissions.g.km.)) + 
+  ggplot2::ggtitle("SUV - STANDARD") +
+  ggplot2::geom_boxplot()
+
+
+# Conclusão:
+# Com base nas análises realizadas, verificou-se que este conjunto de dados possui 42 marcas, 2.053 modelos e 16 classes de veículos.
+# Além disso, existem 5 tipos de combustíveis utilizados pelos veículos.
+# Observou-se que algumas marcas possuem mais modelos de carros do que outras, sendo que a média por fabricante é de 48.880 modelos.
+# Com relação aos tipos de combustíveis, pode-se notar que aquele classificado como "E" possui a mediana e a média de maior emissão de CO2.
+# No entanto, ao analisar o boxplot da classe de veículo por emissão para cada combustível, parece que o tamanho do veículo influencia na análise.
+# Por exemplo, se considerarmos um modelo COMPACT, que é comum a quatro tipos de combustível, parece que o combustível "Z" possui maior emissão de CO2.
+# O mesmo ocorre para SUV - STANDARD e PICKUP TRUCK - STANDARD. Por fim, parece que os combustíveis X e Z são os mais utilizados e que quanto maior o número de cilindros do modelo, maior é a emissão de CO2.
+
+
+#---------------------------------------------------- Pergunta 2 ----------------------------------------------------------------------------
+
+# Verificar se existe diferença na proporção de carros automáticos entre as marcas FORD e CHEVROLET
+# Estatística descritiva + teste + interpretação
+
+dados_exercicio2 <- dados %>%
+  dplyr::filter(Make %in% c('FORD', 'CHEVROLET')) %>% 
+  dplyr::mutate(manual = factor(dplyr::case_when(Transmission %in% c('M5', 'M6', 'M7') ~ "SIM", TRUE ~ "NAO"),levels=c("NAO","SIM")))
+
+contagem <- dados_exercicio2 %>%
+  dplyr::filter(manual=="NAO") %>% 
+  dplyr::group_by(Make) %>%
+  dplyr::summarise(Quantidade = n())
+
+print(contagem)
+
+ggplot(contagem, aes(x=Make, y=Quantidade)) + 
+  ggplot2::geom_bar(stat="identity") +
+  labs(title="Quantidade de carros por marca", x="Marca", y="Quantidade")
+
+prop.test(table(dados_exercicio2$Make,dados_exercicio2$manual))
+
+# Conclusão
+# Com base nos resultados obtidos, podemos concluir que existe uma diferença estatisticamente significativa na proporção de carros automáticos entre as marcas FORD e CHEVROLET,
+# considerando um valor de corte para p de 0.05. A proporção de carros automáticos da marca CHEVROLET (P1 - proporção amostral de 0.8299) é significativamente menor 
+# do que a proporção da marca FORD (P2 - proporção amostral de 0.8822). No entanto, é importante destacar que a amostra de carros da marca FORD (554) é maior em comparação
+# com a amostra da marca CHEVROLET (488).
+
+#---------------------------------------------------- Pergunta 3 ----------------------------------------------------------------------------
+
+# Existe correlação entre consumo de combustível (rodovia) e emissão de CO2 considerando os veículos do tipo COMPACT?
+# Estatística descritiva + teste + interpretação
+
+df_compacto <- subset(dados, Vehicle.Class == "COMPACT")
+head(df_compacto)
+
+# Analise de consumo em rodovia
+hist(df_compacto$Fuel.Consumption.Hwy..L.100.km.)
+boxplot(df_compacto$Fuel.Consumption.Hwy..L.100.km.)
+shapiro.test(df_compacto$Fuel.Consumption.Hwy..L.100.km.)
+qqnorm(df_compacto$Fuel.Consumption.Hwy..L.100.km)
+# Distribuição de Consumo em Rodovias(Fuel.Consumption.Hwy..L.100.km.) não é normal
+
+#### Análise de Emissão de CO2
+hist(df_compacto$CO2.Emissions.g.km)
+boxplot(df_compacto$CO2.Emissions.g.km)
+shapiro.test(df_compacto$CO2.Emissions.g.km)
+qqnorm(df_compacto$CO2.Emissions.g.km)
+# Distribuição de Emissão de CO2 (CO2.Emissions.g.km) não é normal
+
+# Gráfico de dispersão
+ggplot(df_compacto, aes(x=Fuel.Consumption.Hwy..L.100.km., y=CO2.Emissions.g.km.)) + 
+  geom_point() +
+  labs(title="Grafico de Dispersão", x="Consumo em Rodovias", y="Emissão de CO2")
+
+# Análise de correlação
+cor.test(x=df_compacto$Fuel.Consumption.Hwy..L.100.km., y=df_compacto$CO2.Emissions.g.km., method="spearman")
+cor.test(x = df_compacto$Fuel.Consumption.Hwy..L.100.km., y = df_compacto$CO2.Emissions.g.km., method = "kendall")
+
+
+# Considerando-se que as distribuições não são normais, foi utilizada a análise de Spearman e $\alpha$ = 0.05
+# Considerando o resultado do teste de correlação de Spearman ou Kendall com um p-value inferior a 0,05 e um
+# coeficiente de correlação de 93,3% entre o consumo de combustível na rodovia e a emissão de CO2, 
+# podemos concluir que há uma forte correlação positiva entre essas duas variáveis para carros compactos. 
+# Isso significa que, em geral, quanto maior o consumo de combustível na rodovia, maior a emissão de CO2. 
+# No entanto, é importante lembrar que correlação não implica causalidade e outras variáveis podem influenciar na relação entre essas variáveis.
+
+#---------------------------------------------------- Pergunta 4 ----------------------------------------------------------------------------
+
+# Existe diferença na quantidade média de emissão de CO2 nas SUV-Small das marcas KIA, SUBARU e TOYOTA?
+# Estatística descritiva + teste + interpretação
+
+df_kia <- subset(dados,Make == "KIA" & Vehicle.Class == "SUV - SMALL")
+df_subaru <- subset(dados,Make == "SUBARU" & Vehicle.Class == "SUV - SMALL")
+df_toyota <- subset(dados,Make == "TOYOTA" & Vehicle.Class == "SUV - SMALL")
+
+media_df_kia = mean(df_kia$CO2.Emissions.g.km.)
+print(media_df_kia)
+
+media_df_subaru = mean(df_subaru$CO2.Emissions.g.km.)
+print(media_df_subaru)
+
+media_df_toyota = mean(df_toyota$CO2.Emissions.g.km.)
+print(media_df_toyota)
+
+df4 <- rbind(df_kia, df_subaru[-c(6,7),], df_toyota)
+
+# shapiro.test Hipotese nula de normalidade, Hipotese alternativa de nao normalidade
+
+hist(df_kia$CO2.Emissions.g.km)
+shapiro.test(df_kia$CO2.Emissions.g.km)
+qqnorm(df_kia$CO2.Emissions.g.km)
+var(df_kia$CO2.Emissions.g.km)
+# Nao rejeita normalidade
+
+hist(df_subaru$CO2.Emissions.g.km)
+shapiro.test(df_subaru$CO2.Emissions.g.km[-c(6,7)]) # removendo outliers
+qqnorm(df_subaru$CO2.Emissions.g.km[-c(6,7)]) # removendo outliers
+var(df_subaru$CO2.Emissions.g.km[-c(6,7)])
+# Nao rejeita normalidade, se desconsiderar os valores 6 e 7
+
+hist(df_toyota$CO2.Emissions.g.km)
+shapiro.test(df_toyota$CO2.Emissions.g.km)
+qqnorm(df_toyota$CO2.Emissions.g.km)
+var(df_toyota$CO2.Emissions.g.km)
+# Nao rejeita normalidade
+
+Kruskal <- kruskal.test(CO2.Emissions.g.km. ~ Make, data=df4) # Devido a diferenca na variancia
+# Rejeita H0
+
+dunn.test(df4$CO2.Emissions.g.km.,df4$Make,method="bonferroni")
+
+test_kia_subaru <- wilcox.test(df_kia$CO2.Emissions.g.km, df_subaru$CO2.Emissions.g.km)
+test_kia_toyota <- wilcox.test(df_kia$CO2.Emissions.g.km, df_toyota$CO2.Emissions.g.km)
+test_toyota_subaru <- wilcox.test(df_toyota$CO2.Emissions.g.km, df_subaru$CO2.Emissions.g.km)
+
+valores_p <- c(test_kia_subaru$p.value,test_kia_toyota$p.value,test_toyota_subaru$p.value) 
+p.adjust(valores_p, method = "bonferroni", n = 3)
+
+# Conclusao: 
+# Após a análise dos resultados, podemos concluir que há uma diferença significativa na emissão de CO2 entre as três marcas de carros SUV-Small. 
+# A hipótese nula foi rejeitada, o que confirma a existência de diferença na emissão de CO2. Embora os dados apresentem normalidade, 
+# devido à diferença de variância dos dados da Toyota em comparação com a Subaru e a Kia, optamos por utilizar inicialmente o teste ANOVA. 
+# COntudo, realizamos escolhemos o teste de Wilcoxon e corrigimos pelo método Bonferroni para os três testes, o que também rejeitou todas as hipóteses
+# nulas com um p-valor menor que 5. Portanto, podemos concluir que há evidências de que as emissões de CO2 diferem entre as marcas de carros SUV-Small.
+# A hipótese nula é de que não há diferença nas emissões entre as marcas, enquanto a hipótese alternativa é que há diferença.
